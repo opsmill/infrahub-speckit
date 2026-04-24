@@ -18,10 +18,40 @@ handoffs:
 
 Check if `.infrahub.yml` exists in the repository root.
 
-- **If it does NOT exist**: Skip Infrahub routing entirely. Do not run Steps 2–5. Proceed to the core workflow below.
+- **If it does NOT exist**: Skip Infrahub routing entirely. Do not run Steps 2–8. Proceed to the core workflow below.
 - **If it exists**: Continue to Step 2.
 
-### Step 2 — Verify Infrahub connectivity
+### Step 2 — Verify required Infrahub skills are installed
+
+This preset MANDATES invoking the `infrahub:*` skills during specification. Before continuing, confirm these skills appear in your available-skills inventory:
+
+- `infrahub:schema-creator`
+- `infrahub:transform-creator`
+- `infrahub:check-creator`
+- `infrahub:generator-creator`
+- `infrahub:menu-creator`
+- `infrahub:object-creator`
+
+**If ANY are missing**, halt and tell the user:
+
+```
+The Infrahub preset requires the opsmill/infrahub Claude Code skills.
+
+Install (recommended):
+  npx skills add opsmill/infrahub-skills
+
+Or via the Claude Code plugin marketplace:
+  /plugin marketplace add opsmill/claude-marketplace
+  /plugin install infrahub@opsmill
+
+Docs: https://docs.infrahub.app/skills/installation-setup
+
+After installing, restart this session and re-run /speckit.specify.
+```
+
+Do NOT proceed further until the skills are installed. The "MUST invoke" rules in Step 5 are meaningless without them.
+
+### Step 3 — Verify Infrahub connectivity
 
 Run `infrahubctl info` to verify that the Infrahub instance is reachable.
 
@@ -32,9 +62,9 @@ Run `infrahubctl info` to verify that the Infrahub instance is reachable.
   Then re-run /speckit.specify
   ```
   Do NOT proceed further.
-- **If it succeeds**: Continue to Step 3.
+- **If it succeeds**: Continue to Step 4.
 
-### Step 3 — Classify artifact types from the user's input
+### Step 4 — Classify artifact types from the user's input
 
 Match the user's prompt case-insensitively against this table. A prompt can match multiple rows.
 
@@ -48,7 +78,7 @@ Match the user's prompt case-insensitively against this table. A prompt can matc
 
 If nothing matches, default to `spec-schema-template` (schema-first principle — everything downstream depends on the data model).
 
-### Step 4 — Handle single vs. multiple artifact types
+### Step 5 — Handle single vs. multiple artifact types
 
 **Single match** — proceed with that template.
 
@@ -74,9 +104,9 @@ Dependency order (earlier must complete first):
 1. Schema (always first — everything depends on the data model)
 2. Check, Generator, Transform, Menu (all depend on schema; independent of each other)
 
-### Step 5 — Invoke the corresponding Infrahub skill
+### Step 6 — Invoke the corresponding Infrahub skill
 
-**MANDATORY — do NOT skip, defer, or rationalize around this.**
+**MANDATORY — do NOT skip, defer, or rationalize around this.** (Availability was already verified in Step 2.)
 
 Invoke the skill using the Skill tool BEFORE any spec content is written. The skill provides curated reference material (schema properties, validation rules, naming conventions, API patterns) that the spec MUST be consistent with.
 
@@ -96,7 +126,7 @@ For multi-artifact prompts, invoke the skill for the FIRST artifact type in the 
 - "This is a simple change" — simple changes still need correct attribute kinds, cardinalities, and naming
 - "I'll invoke it later during planning" — the spec fixes entities and requirements NOW
 
-### Step 6 — Select the template for the core workflow
+### Step 7 — Select the template for the core workflow
 
 Resolve the template path for the selected artifact type:
 
@@ -105,7 +135,7 @@ Resolve the template path for the selected artifact type:
 
 **Override for the core workflow below** — When the core instructions reference `templates/spec-template.md` or "spec-template", use the Infrahub template selected above instead. The rest of the core flow (branch creation hook, feature directory, quality checklist, reporting, after_specify hooks) runs unchanged.
 
-### Step 7 — Proceed to the core workflow
+### Step 8 — Proceed to the core workflow
 
 Continue with the wrapped core command content below. Remind the user at completion, if multiple artifacts were detected, to re-run `/speckit.specify` for the next artifact in the chain.
 

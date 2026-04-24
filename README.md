@@ -35,19 +35,35 @@ Schema is always first — everything else depends on the data model being loade
 
 ## Requires
 
-- `spec-kit >= 0.8.0` — for `wrap` composition strategy
-- `infrahub` extension — provides the Infrahub-specific spec templates (`spec-schema-template`, `spec-transform-template`, `spec-check-template`, `spec-generator-template`, `spec-menu-template`)
-- `infrahubctl` CLI — for the connectivity check
-
-If the `infrahub` extension is not installed, the specify command falls back to the core `spec-template.md` and warns.
+- **`spec-kit >= 0.8.0`** — for `wrap` composition strategy
+- **`opsmill/infrahub` Claude Code skills** (REQUIRED) — provides the `infrahub:schema-creator`, `infrahub:transform-creator`, `infrahub:check-creator`, `infrahub:generator-creator`, `infrahub:menu-creator`, and `infrahub:object-creator` skills. Each wrapped command halts with install guidance if the skills are not present.
+- **`infrahub` spec-kit extension** (OPTIONAL) — provides the Infrahub-specific spec templates (`spec-schema-template`, `spec-transform-template`, `spec-check-template`, `spec-generator-template`, `spec-menu-template`). If absent, the specify command falls back to the core `spec-template.md` and warns.
+- **`infrahubctl` CLI** — for the connectivity check against a running Infrahub instance.
 
 ## Installation
+
+Install the spec-kit preset:
 
 ```bash
 specify preset add infrahub
 ```
 
-Then ensure the `infrahub` extension is installed too:
+Install the Infrahub skills (recommended — npx):
+
+```bash
+npx skills add opsmill/infrahub-skills
+```
+
+Or via the Claude Code plugin marketplace:
+
+```
+/plugin marketplace add opsmill/claude-marketplace
+/plugin install infrahub@opsmill
+```
+
+Skills documentation: https://docs.infrahub.app/skills/installation-setup
+
+Optionally install the spec-kit `infrahub` extension once it's in the public catalog:
 
 ```bash
 specify extension add infrahub

@@ -16,6 +16,38 @@ handoffs:
 
 Before generating any design artifacts (research.md, data-model.md, contracts/), invoke the Infrahub skill that matches the feature's artifact type. The skill loads authoritative reference material that design decisions MUST be consistent with.
 
+### Prerequisites
+
+If the repository has no `.infrahub.yml`, skip this section entirely and proceed to the core workflow.
+
+Otherwise, confirm these skills appear in your available-skills inventory:
+
+- `infrahub:schema-creator`
+- `infrahub:transform-creator`
+- `infrahub:check-creator`
+- `infrahub:generator-creator`
+- `infrahub:menu-creator`
+- `infrahub:object-creator`
+
+**If ANY are missing**, halt and tell the user:
+
+```
+The Infrahub preset requires the opsmill/infrahub Claude Code skills.
+
+Install (recommended):
+  npx skills add opsmill/infrahub-skills
+
+Or via the Claude Code plugin marketplace:
+  /plugin marketplace add opsmill/claude-marketplace
+  /plugin install infrahub@opsmill
+
+Docs: https://docs.infrahub.app/skills/installation-setup
+
+After installing, restart this session and re-run /speckit.plan.
+```
+
+Do NOT proceed further until the skills are installed.
+
 ### Detection
 
 1. Read the feature spec (`spec.md`) from the current feature directory.
@@ -30,7 +62,6 @@ Before generating any design artifacts (research.md, data-model.md, contracts/),
    | **Menu**      | menu, navigation, sidebar, UI | `infrahub:menu-creator` |
 
 3. If the spec involves multiple artifact types, invoke the skill for the PRIMARY type (the one being designed in this cycle).
-4. If the repository has no `.infrahub.yml`, skip this section entirely and proceed to the core workflow.
 
 ### Invocation
 

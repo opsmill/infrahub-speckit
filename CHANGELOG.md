@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2026-04-24
 
+### Added
+
+- Preflight skill-availability check in all three wrapped commands. If `.infrahub.yml` is present and any `infrahub:*` skill from the `opsmill/infrahub` package is missing, the command halts with install guidance (`npx skills add opsmill/infrahub-skills` or the Claude Code plugin marketplace equivalent) and a pointer to https://docs.infrahub.app/skills/installation-setup. Closes a silent-failure hole where the "MUST invoke skill" instruction no-op'd when the skills weren't installed.
+
 ### Changed
 
 - **BREAKING**: Commands now use the `wrap` composition strategy introduced in spec-kit v0.8.0 instead of `replace`. The core command body (including `before_specify` / `after_plan` / `after_implement` hooks, `SPECIFY_FEATURE_DIRECTORY` resolution, `.specify/feature.json` persistence, marker-based agent context updates, and language-specific `.gitignore` patterns) is inherited automatically from upstream.
 - Minimum required `speckit_version` bumped from `>=0.4.1` to `>=0.8.0`.
-- `speckit.specify.md`, `speckit.plan.md`, and `speckit.implement.md` now contain only the Infrahub-specific pre-logic (routing, connectivity gating, skill invocation, template selection) followed by the `{CORE_TEMPLATE}` placeholder.
+- `speckit.specify.md`, `speckit.plan.md`, and `speckit.implement.md` now contain only the Infrahub-specific pre-logic (routing, preflight, skill invocation, template selection) followed by the `{CORE_TEMPLATE}` placeholder.
+- README now distinguishes the REQUIRED `opsmill/infrahub` Claude Code skills package from the OPTIONAL `infrahub` spec-kit extension, with install commands for both.
 
 ### Removed
 

@@ -8,6 +8,38 @@ description: Execute the implementation plan by processing and executing all tas
 
 Before implementing any task that touches Infrahub artifacts, invoke the corresponding Infrahub skill. The skill loads authoritative reference material, validation rules, and implementation patterns that the code MUST follow.
 
+### Prerequisites
+
+If the repository has no `.infrahub.yml`, skip this section entirely and proceed to the core workflow.
+
+Otherwise, confirm these skills appear in your available-skills inventory:
+
+- `infrahub:schema-creator`
+- `infrahub:transform-creator`
+- `infrahub:check-creator`
+- `infrahub:generator-creator`
+- `infrahub:menu-creator`
+- `infrahub:object-creator`
+
+**If ANY are missing**, halt and tell the user:
+
+```
+The Infrahub preset requires the opsmill/infrahub Claude Code skills.
+
+Install (recommended):
+  npx skills add opsmill/infrahub-skills
+
+Or via the Claude Code plugin marketplace:
+  /plugin marketplace add opsmill/claude-marketplace
+  /plugin install infrahub@opsmill
+
+Docs: https://docs.infrahub.app/skills/installation-setup
+
+After installing, restart this session and re-run /speckit.implement.
+```
+
+Do NOT proceed further until the skills are installed.
+
 ### Detection
 
 1. Read `tasks.md` and `plan.md` from the current feature directory.
@@ -23,7 +55,6 @@ Before implementing any task that touches Infrahub artifacts, invoke the corresp
    | Object data files (`objects/`)          | `infrahub:object-creator`    | Before writing seed data |
 
 3. Invoke each skill ONCE per artifact type per implementation session — you do not need to re-invoke for each task of the same type.
-4. If the repository has no `.infrahub.yml`, skip this section entirely and proceed to the core workflow.
 
 ### Invocation Timing
 
