@@ -1,14 +1,27 @@
 # Infrahub Workflow Routing Preset
 
-Routes `/speckit.specify` to Infrahub-specific spec templates when `.infrahub.yml` is detected in the repository.
+Wraps the core speckit workflow commands with Infrahub-specific artifact routing and mandatory skill invocation when `.infrahub.yml` is detected in the repository.
 
 ## What it does
 
-1. Checks for `.infrahub.yml` in the repo root
-2. Gates on Infrahub connectivity (`infrahubctl info`)
-3. Analyzes the user's prompt to detect artifact types (schema, transform, check, generator, menu)
-4. If multiple types detected, presents the dependency chain and starts with the first
-5. Loads the correct template from the `infrahub` extension
+Uses spec-kit's v0.8.0 `wrap` composition strategy to layer Infrahub-aware behavior *on top of* the core `/speckit.specify`, `/speckit.plan`, and `/speckit.implement` commands. The core command body is inherited automatically (via `{CORE_TEMPLATE}`), so upstream improvements to extension hooks, feature-directory handling, quality checklists, and agent-context updates flow through without manual porting.
+
+### `/speckit.specify`
+
+1. Checks for `.infrahub.yml` in the repo root — if absent, runs the core specify command unchanged.
+2. Gates on Infrahub connectivity via `infrahubctl info`.
+3. Classifies the user prompt into artifact types (schema, transform, check, generator, menu).
+4. For multi-artifact prompts, presents the dependency chain and starts with Schema.
+5. Invokes the matching Infrahub skill (`infrahub:schema-creator`, `infrahub:transform-creator`, …) before any spec is written.
+6. Selects the Infrahub-specific spec template from the `infrahub` extension and runs the core workflow with that template.
+
+### `/speckit.plan`
+
+Invokes the artifact-matched Infrahub skill before Phase 0 research begins, then runs the core planning workflow.
+
+### `/speckit.implement`
+
+Invokes the artifact-matched Infrahub skill before each implementation phase that touches schema/transform/check/generator/menu/object files, then runs the core implementation workflow.
 
 ## Dependency chain
 
@@ -18,9 +31,24 @@ When a feature spans multiple artifact types:
 Schema → [Check / Generator / Transform / Menu]
 ```
 
-Schema is always first -- everything depends on the data model being loaded.
+Schema is always first — everything else depends on the data model being loaded.
 
 ## Requires
 
-- `infrahub` extension (provides the spec templates)
-- `infrahubctl` CLI (for connectivity check)
+- `spec-kit >= 0.8.0` — for `wrap` composition strategy
+- `infrahub` extension — provides the Infrahub-specific spec templates (`spec-schema-template`, `spec-transform-template`, `spec-check-template`, `spec-generator-template`, `spec-menu-template`)
+- `infrahubctl` CLI — for the connectivity check
+
+If the `infrahub` extension is not installed, the specify command falls back to the core `spec-template.md` and warns.
+
+## Installation
+
+```bash
+specify preset add infrahub
+```
+
+Then ensure the `infrahub` extension is installed too:
+
+```bash
+specify extension add infrahub
+```
