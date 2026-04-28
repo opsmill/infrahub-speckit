@@ -22,12 +22,12 @@ If the repository has no `.infrahub.yml`, skip this section entirely and proceed
 
 Otherwise, confirm these skills appear in your available-skills inventory:
 
-- `infrahub:schema-creator`
-- `infrahub:transform-creator`
-- `infrahub:check-creator`
-- `infrahub:generator-creator`
-- `infrahub:menu-creator`
-- `infrahub:object-creator`
+- `infrahub-managing-schemas`
+- `infrahub-managing-transforms`
+- `infrahub-managing-checks`
+- `infrahub-managing-generators`
+- `infrahub-managing-menus`
+- `infrahub-managing-objects`
 
 **If ANY are missing**, halt and tell the user:
 
@@ -55,11 +55,11 @@ Do NOT proceed further until the skills are installed.
 
    | Artifact Type | Signals in Spec | Skill to Invoke |
    |---------------|-----------------|-----------------|
-   | **Schema**    | schema, data model, nodes, attributes, relationships, generics, namespace, kind, CoreFileObject, inherit_from | `infrahub:schema-creator` |
-   | **Transform** | transform, render, config, artifact, jinja, device config | `infrahub:transform-creator` |
-   | **Check**     | check, validate, validation, enforce, rule, constraint | `infrahub:check-creator` |
-   | **Generator** | generator, auto-create, design-driven, topology, provision | `infrahub:generator-creator` |
-   | **Menu**      | menu, navigation, sidebar, UI | `infrahub:menu-creator` |
+   | **Schema**    | schema, data model, nodes, attributes, relationships, generics, namespace, kind, CoreFileObject, inherit_from | `infrahub-managing-schemas` |
+   | **Transform** | transform, render, config, artifact, jinja, device config | `infrahub-managing-transforms` |
+   | **Check**     | check, validate, validation, enforce, rule, constraint | `infrahub-managing-checks` |
+   | **Generator** | generator, auto-create, design-driven, topology, provision | `infrahub-managing-generators` |
+   | **Menu**      | menu, navigation, sidebar, UI | `infrahub-managing-menus` |
 
 3. If the spec involves multiple artifact types, invoke the skill for the PRIMARY type (the one being designed in this cycle).
 
