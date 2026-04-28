@@ -23,14 +23,14 @@ Check if `.infrahub.yml` exists in the repository root.
 
 ### Step 2 — Verify required Infrahub skills are installed
 
-This preset MANDATES invoking the `infrahub:*` skills during specification. Before continuing, confirm these skills appear in your available-skills inventory:
+This preset MANDATES invoking the `infrahub-managing-*` skills during specification. Before continuing, confirm these skills appear in your available-skills inventory:
 
-- `infrahub:schema-creator`
-- `infrahub:transform-creator`
-- `infrahub:check-creator`
-- `infrahub:generator-creator`
-- `infrahub:menu-creator`
-- `infrahub:object-creator`
+- `infrahub-managing-schemas`
+- `infrahub-managing-transforms`
+- `infrahub-managing-checks`
+- `infrahub-managing-generators`
+- `infrahub-managing-menus`
+- `infrahub-managing-objects`
 
 **If ANY are missing**, halt and tell the user:
 
@@ -112,11 +112,11 @@ Invoke the skill using the Skill tool BEFORE any spec content is written. The sk
 
 | Artifact Type | Skill to Invoke | What It Provides |
 |---------------|-----------------|------------------|
-| **Schema**    | `infrahub:schema-creator`    | Schema property reference, node/generic definitions, attribute kinds, relationship types, CoreFileObject, naming conventions, validation rules |
-| **Transform** | `infrahub:transform-creator` | Transform types (Python/Jinja2), query patterns, artifact definitions, content types |
-| **Check**     | `infrahub:check-creator`     | Check definition structure, validation logic patterns, proposed change pipeline |
-| **Generator** | `infrahub:generator-creator` | Generator class patterns, target groups, query parameters, idempotent creation |
-| **Menu**      | `infrahub:menu-creator`      | Menu structure, node organization, sidebar customization |
+| **Schema**    | `infrahub-managing-schemas`    | Schema property reference, node/generic definitions, attribute kinds, relationship types, CoreFileObject, naming conventions, validation rules |
+| **Transform** | `infrahub-managing-transforms` | Transform types (Python/Jinja2), query patterns, artifact definitions, content types |
+| **Check**     | `infrahub-managing-checks`     | Check definition structure, validation logic patterns, proposed change pipeline |
+| **Generator** | `infrahub-managing-generators` | Generator class patterns, target groups, query parameters, idempotent creation |
+| **Menu**      | `infrahub-managing-menus`      | Menu structure, node organization, sidebar customization |
 
 For multi-artifact prompts, invoke the skill for the FIRST artifact type in the dependency chain (the one being specified in this cycle).
 

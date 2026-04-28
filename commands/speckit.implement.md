@@ -14,12 +14,12 @@ If the repository has no `.infrahub.yml`, skip this section entirely and proceed
 
 Otherwise, confirm these skills appear in your available-skills inventory:
 
-- `infrahub:schema-creator`
-- `infrahub:transform-creator`
-- `infrahub:check-creator`
-- `infrahub:generator-creator`
-- `infrahub:menu-creator`
-- `infrahub:object-creator`
+- `infrahub-managing-schemas`
+- `infrahub-managing-transforms`
+- `infrahub-managing-checks`
+- `infrahub-managing-generators`
+- `infrahub-managing-menus`
+- `infrahub-managing-objects`
 
 **If ANY are missing**, halt and tell the user:
 
@@ -47,20 +47,20 @@ Do NOT proceed further until the skills are installed.
 
    | Task Involves | Skill to Invoke | When to Invoke |
    |---------------|-----------------|----------------|
-   | Schema YAML files (`schemas/`)          | `infrahub:schema-creator`    | Before the first schema task |
-   | Python transforms (`transforms/`)       | `infrahub:transform-creator` | Before writing transform code |
-   | Python checks                           | `infrahub:check-creator`     | Before writing check code |
-   | Generator Python files (`generators/`)  | `infrahub:generator-creator` | Before writing generator code |
-   | Menu YAML files (`menus/`)              | `infrahub:menu-creator`      | Before writing menu definitions |
-   | Object data files (`objects/`)          | `infrahub:object-creator`    | Before writing seed data |
+   | Schema YAML files (`schemas/`)          | `infrahub-managing-schemas`    | Before the first schema task |
+   | Python transforms (`transforms/`)       | `infrahub-managing-transforms` | Before writing transform code |
+   | Python checks                           | `infrahub-managing-checks`     | Before writing check code |
+   | Generator Python files (`generators/`)  | `infrahub-managing-generators` | Before writing generator code |
+   | Menu YAML files (`menus/`)              | `infrahub-managing-menus`      | Before writing menu definitions |
+   | Object data files (`objects/`)          | `infrahub-managing-objects`    | Before writing seed data |
 
 3. Invoke each skill ONCE per artifact type per implementation session — you do not need to re-invoke for each task of the same type.
 
 ### Invocation Timing
 
-- **Phase with schema tasks**: Invoke `infrahub:schema-creator` before the FIRST schema task.
-- **Phase with generator tasks**: Invoke `infrahub:generator-creator` before the FIRST generator task.
-- **Phase with transform tasks**: Invoke `infrahub:transform-creator` before the FIRST transform task.
+- **Phase with schema tasks**: Invoke `infrahub-managing-schemas` before the FIRST schema task.
+- **Phase with generator tasks**: Invoke `infrahub-managing-generators` before the FIRST generator task.
+- **Phase with transform tasks**: Invoke `infrahub-managing-transforms` before the FIRST transform task.
 - **Multiple artifact types in one phase**: Invoke each relevant skill before its first task.
 
 **Anti-rationalization check** — if you think "I already loaded the skill during /speckit.specify" or "the plan has all the details I need", invoke the skill anyway. Skill content is NOT persisted across commands; each command session starts fresh.
