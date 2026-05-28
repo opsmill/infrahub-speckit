@@ -1,0 +1,45 @@
+schema_version: "1.0"
+
+extension:
+  id: opsmill-infrahub
+  name: "Infrahub Workflow Routing"
+  version: "3.0.0"
+  description: "Routes speckit specify/plan/implement to Infrahub artifact skills via pre-execution hooks. Hook-based replacement for the v2.x wrap preset."
+  author: opsmill
+  repository: "https://github.com/opsmill/infrahub-speckit"
+  license: Apache-2.0
+
+requires:
+  speckit_version: ">=0.8.0"
+
+provides:
+  commands:
+    - name: speckit.opsmill.infrahub.route-specify
+      file: commands/speckit.opsmill.infrahub.route-specify.md
+      description: "Detect .infrahub.yml, classify artifact, gate Infrahub skill invocation, select Infrahub spec template."
+    - name: speckit.opsmill.infrahub.route-plan
+      file: commands/speckit.opsmill.infrahub.route-plan.md
+      description: "Gate Infrahub skill invocation before plan."
+    - name: speckit.opsmill.infrahub.route-implement
+      file: commands/speckit.opsmill.infrahub.route-implement.md
+      description: "Gate Infrahub skill invocation before implement."
+
+hooks:
+  before_specify:
+    command: speckit.opsmill.infrahub.route-specify
+    optional: false
+    description: "Infrahub artifact routing before specification"
+  before_plan:
+    command: speckit.opsmill.infrahub.route-plan
+    optional: false
+    description: "Infrahub artifact routing before planning"
+  before_implement:
+    command: speckit.opsmill.infrahub.route-implement
+    optional: false
+    description: "Infrahub artifact routing before implementation"
+
+tags:
+  - "infrahub"
+  - "infrastructure"
+  - "routing"
+  - "opsmill"
