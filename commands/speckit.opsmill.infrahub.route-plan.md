@@ -10,6 +10,16 @@ This command is fired as a `before_plan` hook by the `opsmill-infrahub` extensio
 
 Before the core `speckit-plan` skill generates any design artifacts (`research.md`, `data-model.md`, `contracts/`), the matching Infrahub skill must be loaded. The skill loads authoritative reference material that design decisions MUST be consistent with. Skill content is NOT persisted across commands; each command starts fresh, so the skill MUST be re-loaded here even if it was loaded during `/speckit.specify`.
 
+## Hook return semantics
+
+Throughout this file, **"return"** means: stop emitting hook-command output and let control flow back to the calling core skill. Do NOT terminate the session, abort the parent slash command, or skip the core skill body. The spec-kit hook contract requires this hook to either:
+
+- emit a no-routing line and return (no-op case), OR
+- emit the Step 5 directive block and return (routing case), OR
+- emit a user-facing error message and halt the entire command sequence (preflight failure case — the calling skill should NOT proceed in this case).
+
+The third case is the only one where the calling skill should not resume.
+
 ## Step 1 — Detect Infrahub project
 
 If the repository has no `.infrahub.yml`, emit:
@@ -48,7 +58,7 @@ Docs: https://docs.infrahub.app/skills/installation-setup
 After installing, restart this session and re-run /speckit.plan.
 ```
 
-Do NOT proceed further until the skills are installed.
+Do NOT proceed further until the skills are installed. Do NOT continue to later steps or emit any routing directive — exit the hook with the user-facing error message only.
 
 ## Step 3 — Classify the artifact type from `spec.md`
 

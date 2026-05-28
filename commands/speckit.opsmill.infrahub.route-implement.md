@@ -10,6 +10,16 @@ This command is fired as a `before_implement` hook by the `opsmill-infrahub` ext
 
 Before any task that touches Infrahub artifacts is implemented, the corresponding Infrahub skill must be loaded. The skill loads authoritative reference material, validation rules, and implementation patterns that the code MUST follow.
 
+## Hook return semantics
+
+Throughout this file, **"return"** means: stop emitting hook-command output and let control flow back to the calling core skill. Do NOT terminate the session, abort the parent slash command, or skip the core skill body. The spec-kit hook contract requires this hook to either:
+
+- emit a no-routing line and return (no-op case), OR
+- emit the Step 5 directive block and return (routing case), OR
+- emit a user-facing error message and halt the entire command sequence (preflight failure case — the calling skill should NOT proceed in this case).
+
+The third case is the only one where the calling skill should not resume.
+
 ## Step 1 — Detect Infrahub project
 
 If the repository has no `.infrahub.yml`, emit:
@@ -48,7 +58,7 @@ Docs: https://docs.infrahub.app/skills/installation-setup
 After installing, restart this session and re-run /speckit.implement.
 ```
 
-Do NOT proceed further until the skills are installed.
+Do NOT proceed further until the skills are installed. Do NOT continue to later steps or emit any routing directive — exit the hook with the user-facing error message only.
 
 ## Step 3 — Identify artifact types touched by `tasks.md`
 

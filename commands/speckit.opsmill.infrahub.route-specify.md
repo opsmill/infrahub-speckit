@@ -8,6 +8,16 @@ This command is fired as a `before_specify` hook by the `opsmill-infrahub` exten
 
 The core `speckit-specify` skill body runs after this hook returns. Anything you write to the hook's output that the agent treats as part of its context will be applied when the skill reaches the matching step.
 
+## Hook return semantics
+
+Throughout this file, **"return"** means: stop emitting hook-command output and let control flow back to the calling core skill. Do NOT terminate the session, abort the parent slash command, or skip the core skill body. The spec-kit hook contract requires this hook to either:
+
+- emit a no-routing line and return (no-op case), OR
+- emit the Step 8 directive block and return (routing case), OR
+- emit a user-facing error message and halt the entire command sequence (preflight failure case — the calling skill should NOT proceed in this case).
+
+The third case is the only one where the calling skill should not resume.
+
 ## Step 1 — Detect Infrahub project
 
 Check if `.infrahub.yml` exists in the repository root.
@@ -50,7 +60,7 @@ Docs: https://docs.infrahub.app/skills/installation-setup
 After installing, restart this session and re-run /speckit.specify.
 ```
 
-Do NOT proceed further until the skills are installed. The "MUST invoke" rules in Step 5 are meaningless without them. Returning from this hook with skills missing means the core specify skill will run without the Infrahub skill context — that's the silent-failure mode v2.0.0 closed and we are not reopening it.
+Do NOT proceed further until the skills are installed. The "MUST invoke" rules in Step 5 are meaningless without them. Returning from this hook with skills missing means the core specify skill will run without the Infrahub skill context — that's the silent-failure mode v2.0.0 closed and we are not reopening it. Do NOT continue to later steps or emit any routing directive — exit the hook with the user-facing error message only.
 
 ## Step 3 — Verify Infrahub connectivity
 
@@ -62,7 +72,7 @@ Run `infrahubctl info` to verify that the Infrahub instance is reachable.
     invoke start
   Then re-run /speckit.specify
   ```
-  Do NOT proceed further.
+  Do NOT proceed further. Do NOT continue to later steps or emit any routing directive — exit the hook with the user-facing error message only.
 - **If it succeeds**: Continue to Step 4.
 
 ## Step 4 — Classify artifact types from the user's input
