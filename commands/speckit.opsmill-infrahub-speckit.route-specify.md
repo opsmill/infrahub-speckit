@@ -4,7 +4,7 @@ description: "Hook command — runs before /speckit.specify in Infrahub projects
 
 # Infrahub Routing — pre-specify hook
 
-This command is fired as a `before_specify` hook by the `opsmill-infrahub` extension. It runs every time the `speckit-specify` skill is invoked — whether by `/speckit.specify`, by `opsmill-speckit/prep`, or by any other harness. If `.infrahub.yml` is not present in the repository root, this command is a no-op (exit cleanly without emitting any directives).
+This command is fired as a `before_specify` hook by the `opsmill-infrahub-speckit` extension. It runs every time the `speckit-specify` skill is invoked — whether by `/speckit.specify`, by `opsmill-speckit/prep`, or by any other harness. If `.infrahub.yml` is not present in the repository root, this command is a no-op (exit cleanly without emitting any directives).
 
 The core `speckit-specify` skill body runs after this hook returns. Anything you write to the hook's output that the agent treats as part of its context will be applied when the skill reaches the matching step.
 
@@ -25,7 +25,7 @@ Check if `.infrahub.yml` exists in the repository root.
 - **If it does NOT exist**: Skip the rest of this command. Emit a single line of output:
 
   ```
-  [opsmill-infrahub] No .infrahub.yml detected. No routing applied.
+  [opsmill-infrahub-speckit] No .infrahub.yml detected. No routing applied.
   ```
 
   Then return. The core specify skill continues unchanged.
@@ -46,7 +46,7 @@ This extension MANDATES invoking the `infrahub-managing-*` skills during specifi
 **If ANY are missing**, halt and tell the user:
 
 ```
-The opsmill-infrahub extension requires the opsmill/infrahub Claude Code skills.
+The opsmill-infrahub-speckit extension requires the opsmill/infrahub Claude Code skills.
 
 Install (recommended):
   npx skills add opsmill/infrahub-skills
@@ -141,7 +141,7 @@ For multi-artifact prompts, invoke the skill for the FIRST artifact type in the 
 
 Resolve the template path for the selected artifact type:
 
-1. Prefer `.specify/extensions/infrahub/templates/<template-name>.md` (e.g. `spec-schema-template.md`). Note: these templates are shipped by the separate optional `infrahub` spec-kit extension (not by `opsmill-infrahub`).
+1. Prefer `.specify/extensions/infrahub/templates/<template-name>.md` (e.g. `spec-schema-template.md`). Note: these templates are shipped by the separate optional `infrahub` spec-kit extension (not by `opsmill-infrahub-speckit`).
 2. If that file does not exist, fall back to `.specify/templates/spec-template.md`. Emit a warning that the Infrahub extension templates are missing.
 
 ## Step 8 — Emit the routing directive and return
@@ -149,7 +149,7 @@ Resolve the template path for the selected artifact type:
 Emit the following directive verbatim as the final output of this hook. The core `speckit-specify` skill reads the hook output as part of its context before entering its Outline phase, and the agent must honor this directive when reaching the template-loading step in the skill body:
 
 ```
-[opsmill-infrahub routing — applies to this /speckit.specify run only]
+[opsmill-infrahub-speckit routing — applies to this /speckit.specify run only]
 
 Artifact type: <SELECTED-ARTIFACT-TYPE>
 Skill loaded: <SKILL-NAME>

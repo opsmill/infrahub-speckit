@@ -4,7 +4,7 @@ Hooks the core `/speckit.specify`, `/speckit.plan`, and `/speckit.implement` com
 
 ## What it does
 
-The `opsmill-infrahub` extension registers three `before_*` hooks against the core speckit skills. When any of those skills is invoked — whether by the slash command, by another skill (e.g. `opsmill-speckit/auto`), or by an autonomous agent — the matching hook fires *before* the skill body runs and:
+The `opsmill-infrahub-speckit` extension registers three `before_*` hooks against the core speckit skills. When any of those skills is invoked — whether by the slash command, by another skill (e.g. `opsmill-speckit/auto`), or by an autonomous agent — the matching hook fires *before* the skill body runs and:
 
 - detects `.infrahub.yml` (no-op if absent),
 - verifies the `infrahub-managing-*` Claude Code skills are installed,
@@ -71,7 +71,7 @@ specify extension add --from https://github.com/opsmill/infrahub-speckit/archive
 Or, once it's published to the public spec-kit catalog:
 
 ```bash
-specify extension add opsmill-infrahub
+specify extension add opsmill-infrahub-speckit
 ```
 
 Install the Infrahub skills (required — these provide the `infrahub-managing-*` skills the hooks invoke):
@@ -97,7 +97,7 @@ specify extension add infrahub
 
 ### Upgrading from v2.x
 
-v2.x installed via `specify preset add infrahub` and overrode `/speckit.specify`, `/speckit.plan`, and `/speckit.implement` via wrap composition. v3.0 installs via `specify extension add opsmill-infrahub` and instead registers `before_*` hooks. Upgrade path:
+v2.x installed via `specify preset add infrahub` and overrode `/speckit.specify`, `/speckit.plan`, and `/speckit.implement` via wrap composition. v3.0 installs via `specify extension add opsmill-infrahub-speckit` and instead registers `before_*` hooks. Upgrade path:
 
 ```bash
 specify preset remove infrahub
@@ -112,7 +112,7 @@ There is a separate, narrowly-scoped `infrahub` extension (id: `infrahub`) that 
 
 ```bash
 specify extension add infrahub                          # JPD/Jira branch validator
-specify extension add --from <opsmill-infrahub URL>     # artifact routing
+specify extension add --from <opsmill-infrahub-speckit URL>     # artifact routing
 ```
 
 The `before_specify` event will then fire in that order at runtime.
@@ -230,14 +230,14 @@ specs/
 
 ## Troubleshooting
 
-**"The opsmill-infrahub extension requires the opsmill/infrahub Claude Code skills"** — the preflight check in Step 2 of the hook is telling you the `infrahub-managing-*` skills aren't installed. Run `npx skills add opsmill/infrahub-skills`, restart the session, and retry.
+**"The opsmill-infrahub-speckit extension requires the opsmill/infrahub Claude Code skills"** — the preflight check in Step 2 of the hook is telling you the `infrahub-managing-*` skills aren't installed. Run `npx skills add opsmill/infrahub-skills`, restart the session, and retry.
 
 **"Infrahub is not reachable. Please start your Infrahub instance first"** — the `infrahubctl info` connectivity gate in Step 3 of `before_specify` failed. Start your local Infrahub and retry.
 
 **Spec falls back to the core `spec-template.md` and warns** — the separate optional `infrahub` spec-kit extension (the one that ships templates) isn't installed. The fallback produces a valid spec; the only thing you lose is the Infrahub-specific section scaffolding. Install the templates extension if and when available.
 
-**`specify extension list` doesn't show `opsmill-infrahub` after install** — confirm the install command succeeded and that `.specify/extensions/opsmill-infrahub/extension.yml` exists in the target project. If it does, also confirm `.specify/extensions.yml` has three new entries under `hooks.before_specify`, `hooks.before_plan`, and `hooks.before_implement` referencing this extension. Note: in spec-kit 0.8.x the top-level `installed:` list in `extensions.yml` may stay empty even on a healthy install — the install registry moved to `.specify/extensions/.registry`, which is what `specify extension list` reads. The presence of the `hooks.*` entries is the canonical signal. If those entries are missing, re-run `specify extension add` — install was incomplete.
+**`specify extension list` doesn't show `opsmill-infrahub-speckit` after install** — confirm the install command succeeded and that `.specify/extensions/opsmill-infrahub-speckit/extension.yml` exists in the target project. If it does, also confirm `.specify/extensions.yml` has three new entries under `hooks.before_specify`, `hooks.before_plan`, and `hooks.before_implement` referencing this extension. Note: in spec-kit 0.8.x the top-level `installed:` list in `extensions.yml` may stay empty even on a healthy install — the install registry moved to `.specify/extensions/.registry`, which is what `specify extension list` reads. The presence of the `hooks.*` entries is the canonical signal. If those entries are missing, re-run `specify extension add` — install was incomplete.
 
 **Skills exist but the agent didn't invoke them** — the hook command instructs the agent to invoke the skills as a hard requirement, but agents with weak instruction-following may skip. Look for the "anti-rationalization check" in the route-* command files and paste it verbatim to the agent if it tries to proceed without invoking.
 
-**Two `before_specify` hooks fire and only one is wanted** — the standalone `infrahub` (JPD validator) extension and this `opsmill-infrahub` extension both hook `before_specify`. This is intentional (see the Coexistence section). If you only want one, remove the other with `specify extension remove <id>`.
+**Two `before_specify` hooks fire and only one is wanted** — the standalone `infrahub` (JPD validator) extension and this `opsmill-infrahub-speckit` extension both hook `before_specify`. This is intentional (see the Coexistence section). If you only want one, remove the other with `specify extension remove <id>`.

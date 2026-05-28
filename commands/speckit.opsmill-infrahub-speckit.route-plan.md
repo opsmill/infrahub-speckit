@@ -4,7 +4,7 @@ description: "Hook command — runs before /speckit.plan in Infrahub projects. I
 
 # Infrahub Routing — pre-plan hook
 
-This command is fired as a `before_plan` hook by the `opsmill-infrahub` extension. It runs every time the `speckit-plan` skill is invoked. If `.infrahub.yml` is not present, this command is a no-op.
+This command is fired as a `before_plan` hook by the `opsmill-infrahub-speckit` extension. It runs every time the `speckit-plan` skill is invoked. If `.infrahub.yml` is not present, this command is a no-op.
 
 **MANDATORY — do NOT skip, defer, or rationalize around this.**
 
@@ -25,7 +25,7 @@ The third case is the only one where the calling skill should not resume.
 If the repository has no `.infrahub.yml`, emit:
 
 ```
-[opsmill-infrahub] No .infrahub.yml detected. No routing applied.
+[opsmill-infrahub-speckit] No .infrahub.yml detected. No routing applied.
 ```
 
 Then return. The core plan skill runs unchanged.
@@ -44,7 +44,7 @@ Confirm these skills appear in your available-skills inventory:
 **If ANY are missing**, halt and tell the user:
 
 ```
-The opsmill-infrahub extension requires the opsmill/infrahub Claude Code skills.
+The opsmill-infrahub-speckit extension requires the opsmill/infrahub Claude Code skills.
 
 Install (recommended):
   npx skills add opsmill/infrahub-skills
@@ -90,7 +90,7 @@ Invoke the matched skill using the Skill tool BEFORE returning. Use the skill's 
 Emit a single status line:
 
 ```
-[opsmill-infrahub routing — applies to this /speckit.plan run only]
+[opsmill-infrahub-speckit routing — applies to this /speckit.plan run only]
 
 Skill loaded: <SKILL-NAME>
 ```
