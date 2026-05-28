@@ -1,7 +1,7 @@
 schema_version: "1.0"
 
 extension:
-  id: opsmill-infrahub-speckit
+  id: infrahub-speckit
   name: "Infrahub Workflow Routing"
   version: "3.0.0"
   description: "Routes speckit specify/plan/implement to Infrahub artifact skills via pre-execution hooks. Hook-based replacement for the v2.x wrap preset."
@@ -14,27 +14,27 @@ requires:
 
 provides:
   commands:
-    - name: speckit.opsmill-infrahub-speckit.route-specify
-      file: commands/speckit.opsmill-infrahub-speckit.route-specify.md
+    - name: speckit.infrahub-speckit.route-specify
+      file: commands/speckit.infrahub-speckit.route-specify.md
       description: "Detect .infrahub.yml, classify artifact, gate Infrahub skill invocation, select Infrahub spec template."
-    - name: speckit.opsmill-infrahub-speckit.route-plan
-      file: commands/speckit.opsmill-infrahub-speckit.route-plan.md
+    - name: speckit.infrahub-speckit.route-plan
+      file: commands/speckit.infrahub-speckit.route-plan.md
       description: "Gate Infrahub skill invocation before plan."
-    - name: speckit.opsmill-infrahub-speckit.route-implement
-      file: commands/speckit.opsmill-infrahub-speckit.route-implement.md
+    - name: speckit.infrahub-speckit.route-implement
+      file: commands/speckit.infrahub-speckit.route-implement.md
       description: "Gate Infrahub skill invocation before implement."
 
 hooks:
   before_specify:
-    command: speckit.opsmill-infrahub-speckit.route-specify
+    command: speckit.infrahub-speckit.route-specify
     optional: false
     description: "Infrahub artifact routing before specification"
   before_plan:
-    command: speckit.opsmill-infrahub-speckit.route-plan
+    command: speckit.infrahub-speckit.route-plan
     optional: false
     description: "Infrahub artifact routing before planning"
   before_implement:
-    command: speckit.opsmill-infrahub-speckit.route-implement
+    command: speckit.infrahub-speckit.route-implement
     optional: false
     description: "Infrahub artifact routing before implementation"
 
