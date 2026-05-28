@@ -50,7 +50,7 @@ Schema is always first — everything else depends on the data model being loade
 ## Requires
 
 - **`spec-kit >= 0.8.0`** — for the hook execution contract (extensions register `before_*` hooks read from `.specify/extensions.yml`)
-- **`opsmill/infrahub` Claude Code skills** (REQUIRED) — provides the `infrahub:schema-creator`, `infrahub:transform-creator`, `infrahub:check-creator`, `infrahub:generator-creator`, `infrahub:menu-creator`, and `infrahub:object-creator` skills. Each wrapped command halts with install guidance if the skills are not present.
+- **`opsmill/infrahub` Claude Code skills** (REQUIRED) — provides the `infrahub-managing-schemas`, `infrahub-managing-transforms`, `infrahub-managing-checks`, `infrahub-managing-generators`, `infrahub-managing-menus`, and `infrahub-managing-objects` skills. Each hook command halts with install guidance if the skills are not present.
 - **`infrahub` spec-kit extension** (OPTIONAL) — provides the Infrahub-specific spec templates (`spec-schema-template`, `spec-transform-template`, `spec-check-template`, `spec-generator-template`, `spec-menu-template`). If absent, the specify command falls back to the core `spec-template.md` and warns.
 - **`infrahubctl` CLI** — for the connectivity check against a running Infrahub instance.
 
@@ -164,7 +164,7 @@ Then from Claude Code:
 The core `speckit-specify` skill fires the `before_specify` hook from this extension before its body runs. The hook:
 
 1. Verifies `.infrahub.yml` exists (else returns; core specify runs unchanged).
-2. Verifies the six `infrahub:*` skills are installed (else halts with install guidance).
+2. Verifies the six `infrahub-managing-*` skills are installed (else halts with install guidance).
 3. Runs `infrahubctl info` (else halts with "start your Infrahub instance").
 4. Matches your prompt against artifact-type keywords — `schema`, `transform`, `check`, `generator`, `menu`.
 5. If multiple types match, presents the dependency chain and starts with Schema:
@@ -176,7 +176,7 @@ The core `speckit-specify` skill fires the `before_specify` hook from this exten
    Starting with: Schema
    After completing this cycle, run /speckit.specify again for the next artifact.
    ```
-6. Invokes the matching Infrahub skill (e.g. `infrahub:schema-creator`) — pulls in curated attribute-kind, relationship-kind, cardinality, and naming-convention reference material that the spec must be consistent with.
+6. Invokes the matching Infrahub skill (e.g. `infrahub-managing-schemas`) — pulls in curated attribute-kind, relationship-kind, cardinality, and naming-convention reference material that the spec must be consistent with.
 7. Selects the Infrahub-specific template (`spec-schema-template`, `spec-transform-template`, etc.) from the `infrahub` spec-kit extension if installed, or falls back to the core `spec-template` with a warning.
 8. Emits a template-override directive and returns. The core `speckit-specify` skill body runs next — it picks up the directive and writes `spec.md` from the Infrahub-specific template, then creates the feature directory, produces the quality checklist, and fires `after_specify` hooks.
 
@@ -186,7 +186,7 @@ Re-invokes the artifact-matched skill before Phase 0 research begins, then runs 
 
 **`/speckit.implement`**
 
-Re-invokes the relevant skill before the first task of each artifact type in each phase — `infrahub:schema-creator` before schema YAML tasks, `infrahub:transform-creator` before transform tasks, and so on. Each command invocation starts fresh so skills must be re-invoked per command, not just per feature.
+Re-invokes the relevant skill before the first task of each artifact type in each phase — `infrahub-managing-schemas` before schema YAML tasks, `infrahub-managing-transforms` before transform tasks, and so on. Each command invocation starts fresh so skills must be re-invoked per command, not just per feature.
 
 ### Multi-artifact features: the chain
 
