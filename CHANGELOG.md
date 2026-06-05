@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-05-28
+
+### Changed
+
+- **BREAKING**: This package is now a spec-kit **extension** (`extension.yml`), not a preset (`preset.yml`). Composition has moved from the slash-command layer (preset/wrap) to the skill-runtime layer (hooks). Install with `specify extension add` instead of `specify preset add`. The extension id is `infrahub-speckit` (renamed from `infrahub` to avoid collision with the standalone `infrahub` JPD/Jira branch validator extension).
+- **BREAKING**: The three customized commands (`speckit.specify`, `speckit.plan`, `speckit.implement`) are no longer wrapped. The Infrahub routing logic now lives in three new hook commands (`speckit.infrahub-speckit.route-specify`, `route-plan`, `route-implement`) registered against `before_specify`, `before_plan`, and `before_implement` respectively. From a user's perspective, `/speckit.specify` behaves the same — the hook fires before the core skill body runs. From an integrator's perspective, the routing now fires for *any* invocation of the underlying skills, not just the slash command — so callers like `opsmill-speckit/auto` are now covered.
+
+### Why this matters
+
+The v2.x preset wrapped slash command files. When `opsmill-speckit/auto` (or any other skill or agent) invoked the `speckit-specify` skill directly without going through `/speckit.specify`, the wrap was bypassed and Infrahub routing did not run. The v3.0 hook fires inside the core skill's pre-execution checks, regardless of caller.
+
+### Migration
+
+```bash
+specify preset remove infrahub
+specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
+```
+
+After upgrade, `.specify/extensions.yml` will have three new entries under `hooks.before_specify`, `hooks.before_plan`, and `hooks.before_implement`. No other consumer-side changes required.
+
+### Removed
+
+- `preset.yml` (replaced by `extension.yml`).
+- `commands/speckit.specify.md`, `commands/speckit.plan.md`, `commands/speckit.implement.md` (replaced by the three `route-*` hook commands).
+
 ## [2.0.0] - 2026-04-24
 
 ### Added

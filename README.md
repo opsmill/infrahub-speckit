@@ -1,27 +1,41 @@
-# Infrahub Workflow Routing Preset
+# Infrahub Workflow Routing Extension
 
-Wraps the core speckit workflow commands with Infrahub-specific artifact routing and mandatory skill invocation when `.infrahub.yml` is detected in the repository.
+Hooks the core `/speckit.specify`, `/speckit.plan`, and `/speckit.implement` commands with Infrahub-aware artifact routing and mandatory skill invocation when `.infrahub.yml` is detected in the repository.
 
 ## What it does
 
-Uses spec-kit's v0.8.0 `wrap` composition strategy to layer Infrahub-aware behavior *on top of* the core `/speckit.specify`, `/speckit.plan`, and `/speckit.implement` commands. The core command body is inherited automatically (via `{CORE_TEMPLATE}`), so upstream improvements to extension hooks, feature-directory handling, quality checklists, and agent-context updates flow through without manual porting.
+The `infrahub-speckit` extension registers three `before_*` hooks against the core speckit skills. When any of those skills is invoked — whether by the slash command, by another skill (e.g. `opsmill-speckit/auto`), or by an autonomous agent — the matching hook fires *before* the skill body runs and:
 
-### `/speckit.specify`
+- detects `.infrahub.yml` (no-op if absent),
+- verifies the `infrahub-managing-*` Claude Code skills are installed,
+- gates on Infrahub connectivity via `infrahubctl info` (for `before_specify` only),
+- classifies the requested artifact type (schema / transform / check / generator / menu),
+- invokes the matching `infrahub-managing-*` skill,
+- (for `before_specify`) emits a template-override directive so the core specify skill writes from the Infrahub spec template.
 
-1. Checks for `.infrahub.yml` in the repo root — if absent, runs the core specify command unchanged.
-2. Gates on Infrahub connectivity via `infrahubctl info`.
-3. Classifies the user prompt into artifact types (schema, transform, check, generator, menu).
-4. For multi-artifact prompts, presents the dependency chain and starts with Schema.
-5. Invokes the matching Infrahub skill (`infrahub:schema-creator`, `infrahub:transform-creator`, …) before any spec is written.
-6. Selects the Infrahub-specific spec template from the `infrahub` extension and runs the core workflow with that template.
+The hook returns; the core skill runs.
 
-### `/speckit.plan`
+### Why "extension" not "preset" (v3.0 vs v2.x)
 
-Invokes the artifact-matched Infrahub skill before Phase 0 research begins, then runs the core planning workflow.
+v2.x was a `wrap` preset — it composed at the slash-command layer by substituting `{CORE_TEMPLATE}` at install time. That worked when the user typed `/speckit.specify`, but was bypassed when another skill (such as `opsmill-speckit/auto`'s `prep` step) invoked the `speckit-specify` skill directly. The hook model in v3.0 composes at the skill-runtime layer instead: the core skill's `## Pre-Execution Checks` block reads `.specify/extensions.yml` and fires the registered hook regardless of how the skill was entered.
 
-### `/speckit.implement`
+### `before_specify` hook
 
-Invokes the artifact-matched Infrahub skill before each implementation phase that touches schema/transform/check/generator/menu/object files, then runs the core implementation workflow.
+1. Checks for `.infrahub.yml` — no-op if absent.
+2. Verifies the six `infrahub-managing-*` skills are installed.
+3. Gates on Infrahub connectivity via `infrahubctl info`.
+4. Classifies the user prompt into artifact types.
+5. For multi-artifact prompts, presents the dependency chain and starts with Schema.
+6. Invokes the matching `infrahub-managing-*` skill.
+7. Emits a template-override directive ("use `.specify/extensions/infrahub/templates/spec-schema-template.md` instead of the core template") that the core specify skill applies when reaching its template-loading step.
+
+### `before_plan` hook
+
+Re-invokes the artifact-matched skill before Phase 0 research begins, then returns.
+
+### `before_implement` hook
+
+Identifies every artifact type touched by `tasks.md`, invokes each matching skill once per session, then returns.
 
 ## Dependency chain
 
@@ -35,32 +49,32 @@ Schema is always first — everything else depends on the data model being loade
 
 ## Requires
 
-- **`spec-kit >= 0.8.0`** — for `wrap` composition strategy
-- **`opsmill/infrahub` Claude Code skills** (REQUIRED) — provides the `infrahub:schema-creator`, `infrahub:transform-creator`, `infrahub:check-creator`, `infrahub:generator-creator`, `infrahub:menu-creator`, and `infrahub:object-creator` skills. Each wrapped command halts with install guidance if the skills are not present.
+- **`spec-kit >= 0.8.0`** — for the hook execution contract (extensions register `before_*` hooks read from `.specify/extensions.yml`)
+- **`opsmill/infrahub` Claude Code skills** (REQUIRED) — provides the `infrahub-managing-schemas`, `infrahub-managing-transforms`, `infrahub-managing-checks`, `infrahub-managing-generators`, `infrahub-managing-menus`, and `infrahub-managing-objects` skills. Each hook command halts with install guidance if the skills are not present.
 - **`infrahub` spec-kit extension** (OPTIONAL) — provides the Infrahub-specific spec templates (`spec-schema-template`, `spec-transform-template`, `spec-check-template`, `spec-generator-template`, `spec-menu-template`). If absent, the specify command falls back to the core `spec-template.md` and warns.
 - **`infrahubctl` CLI** — for the connectivity check against a running Infrahub instance.
 
 ## Installation
 
-Install the spec-kit preset directly from this repository (latest `main`):
+Install the spec-kit extension directly from this repository (latest `main`):
 
 ```bash
-specify preset add --from https://github.com/opsmill/infrahub-speckit/archive/refs/heads/main.zip
+specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/heads/main.zip
 ```
 
 Pin to a released version for stability:
 
 ```bash
-specify preset add --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v2.0.0.zip
+specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
 ```
 
 Or, once it's published to the public spec-kit catalog:
 
 ```bash
-specify preset add infrahub
+specify extension add infrahub-speckit
 ```
 
-Install the Infrahub skills (recommended — npx):
+Install the Infrahub skills (required — these provide the `infrahub-managing-*` skills the hooks invoke):
 
 ```bash
 npx skills add opsmill/infrahub-skills
@@ -75,11 +89,33 @@ Or via the Claude Code plugin marketplace:
 
 Skills documentation: https://docs.infrahub.app/skills/installation-setup
 
-Optionally install the spec-kit `infrahub` extension once it's in the public catalog:
+Optionally install the spec-kit `infrahub` extension once it's in the public catalog — this is the package that ships the Infrahub-specific spec templates (`spec-schema-template`, etc.) referenced in the route-specify hook's template-override directive:
 
 ```bash
 specify extension add infrahub
 ```
+
+### Upgrading from v2.x
+
+v2.x installed via `specify preset add infrahub` and overrode `/speckit.specify`, `/speckit.plan`, and `/speckit.implement` via wrap composition. v3.0 installs via `specify extension add infrahub-speckit` and instead registers `before_*` hooks. Upgrade path:
+
+```bash
+specify preset remove infrahub
+specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
+```
+
+After upgrading, your `.specify/extensions.yml` will gain three new `before_*` hook entries under `hooks:`. The slash commands themselves are no longer customized — they run the core skill, which then fires the hook.
+
+### Coexistence with the standalone `infrahub` extension
+
+There is a separate, narrowly-scoped `infrahub` extension (id: `infrahub`) that validates Jira/JPD ticket references on feature branch creation. It also hooks `before_specify`. Both extensions can be installed in the same project and will coexist — `specify extension add` appends hook entries in install order. We recommend installing the JPD validator first (it owns branch creation; no point routing artifacts for a feature branch you can't create), then this extension:
+
+```bash
+specify extension add infrahub                          # JPD/Jira branch validator
+specify extension add --from <infrahub-speckit URL>     # artifact routing
+```
+
+The `before_specify` event will then fire in that order at runtime.
 
 ## Usage
 
@@ -91,8 +127,8 @@ From a fresh directory:
 # 1. Initialize a spec-kit project with Claude integration
 specify init --here --integration claude
 
-# 2. Install this preset (direct from repo — catalog publishing is pending)
-specify preset add --from https://github.com/opsmill/infrahub-speckit/archive/refs/heads/main.zip
+# 2. Install this extension (direct from repo — catalog publishing is pending)
+specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/heads/main.zip
 
 # 3. Install the required Infrahub skills
 npx skills add opsmill/infrahub-skills
@@ -125,8 +161,10 @@ Then from Claude Code:
 
 **`/speckit.specify <prompt>`**
 
-1. Verifies `.infrahub.yml` exists (else runs core specify unchanged).
-2. Verifies the six `infrahub:*` skills are installed (else halts with install guidance).
+The core `speckit-specify` skill fires the `before_specify` hook from this extension before its body runs. The hook:
+
+1. Verifies `.infrahub.yml` exists (else returns; core specify runs unchanged).
+2. Verifies the six `infrahub-managing-*` skills are installed (else halts with install guidance).
 3. Runs `infrahubctl info` (else halts with "start your Infrahub instance").
 4. Matches your prompt against artifact-type keywords — `schema`, `transform`, `check`, `generator`, `menu`.
 5. If multiple types match, presents the dependency chain and starts with Schema:
@@ -138,9 +176,9 @@ Then from Claude Code:
    Starting with: Schema
    After completing this cycle, run /speckit.specify again for the next artifact.
    ```
-6. Invokes the matching Infrahub skill (e.g. `infrahub:schema-creator`) — pulls in curated attribute-kind, relationship-kind, cardinality, and naming-convention reference material that the spec must be consistent with.
+6. Invokes the matching Infrahub skill (e.g. `infrahub-managing-schemas`) — pulls in curated attribute-kind, relationship-kind, cardinality, and naming-convention reference material that the spec must be consistent with.
 7. Selects the Infrahub-specific template (`spec-schema-template`, `spec-transform-template`, etc.) from the `infrahub` spec-kit extension if installed, or falls back to the core `spec-template` with a warning.
-8. Runs the core specify workflow with the selected template — writes `spec.md`, creates the feature directory, produces the quality checklist, fires `after_specify` hooks.
+8. Emits a template-override directive and returns. The core `speckit-specify` skill body runs next — it picks up the directive and writes `spec.md` from the Infrahub-specific template, then creates the feature directory, produces the quality checklist, and fires `after_specify` hooks.
 
 **`/speckit.plan`**
 
@@ -148,7 +186,7 @@ Re-invokes the artifact-matched skill before Phase 0 research begins, then runs 
 
 **`/speckit.implement`**
 
-Re-invokes the relevant skill before the first task of each artifact type in each phase — `infrahub:schema-creator` before schema YAML tasks, `infrahub:transform-creator` before transform tasks, and so on. Each command invocation starts fresh so skills must be re-invoked per command, not just per feature.
+Re-invokes the relevant skill before the first task of each artifact type in each phase — `infrahub-managing-schemas` before schema YAML tasks, `infrahub-managing-transforms` before transform tasks, and so on. Each command invocation starts fresh so skills must be re-invoked per command, not just per feature.
 
 ### Multi-artifact features: the chain
 
@@ -192,12 +230,14 @@ specs/
 
 ## Troubleshooting
 
-**"The Infrahub preset requires the opsmill/infrahub Claude Code skills"** — the preflight check in Step 2 / Prerequisites is telling you the skills aren't installed in this Claude Code session. Run `npx skills add opsmill/infrahub-skills`, restart the session, and retry.
+**"The infrahub-speckit extension requires the opsmill/infrahub Claude Code skills"** — the preflight check in Step 2 of the hook is telling you the `infrahub-managing-*` skills aren't installed. Run `npx skills add opsmill/infrahub-skills`, restart the session, and retry.
 
-**"Infrahub is not reachable. Please start your Infrahub instance first"** — the `infrahubctl info` connectivity gate failed. Start your local Infrahub and retry.
+**"Infrahub is not reachable. Please start your Infrahub instance first"** — the `infrahubctl info` connectivity gate in Step 3 of `before_specify` failed. Start your local Infrahub and retry.
 
-**Spec falls back to the core `spec-template.md` and warns** — the `infrahub` spec-kit extension isn't installed (it may not be in the public catalog yet). The fallback produces a valid spec; the only thing you lose is the Infrahub-specific section scaffolding. Install the extension if and when available.
+**Spec falls back to the core `spec-template.md` and warns** — the separate optional `infrahub` spec-kit extension (the one that ships templates) isn't installed. The fallback produces a valid spec; the only thing you lose is the Infrahub-specific section scaffolding. Install the templates extension if and when available.
 
-**`specify preset resolve speckit.specify` says "not found"** — known quirk in spec-kit v0.8.0 for composed (`strategy: "wrap"`) commands. Use `specify preset info infrahub` to confirm the preset is installed and wrapping the expected commands; inspect `.claude/skills/speckit-specify/SKILL.md` directly to verify composition produced the expected content.
+**`specify extension list` doesn't show `infrahub-speckit` after install** — confirm the install command succeeded and that `.specify/extensions/infrahub-speckit/extension.yml` exists in the target project. If it does, also confirm `.specify/extensions.yml` has three new entries under `hooks.before_specify`, `hooks.before_plan`, and `hooks.before_implement` referencing this extension. Note: in spec-kit 0.8.x the top-level `installed:` list in `extensions.yml` may stay empty even on a healthy install — the install registry moved to `.specify/extensions/.registry`, which is what `specify extension list` reads. The presence of the `hooks.*` entries is the canonical signal. If those entries are missing, re-run `specify extension add` — install was incomplete.
 
-**Skills exist but my agent didn't invoke them** — the preset instructs the agent to invoke the skills as a hard requirement, but agents with weak instruction-following may skip. Look for the "anti-rationalization check" in the preset's Step 5 and paste it verbatim to the agent if it tries to proceed without invoking.
+**Skills exist but the agent didn't invoke them** — the hook command instructs the agent to invoke the skills as a hard requirement, but agents with weak instruction-following may skip. Look for the "anti-rationalization check" in the route-* command files and paste it verbatim to the agent if it tries to proceed without invoking.
+
+**Two `before_specify` hooks fire and only one is wanted** — the standalone `infrahub` (JPD validator) extension and this `infrahub-speckit` extension both hook `before_specify`. This is intentional (see the Coexistence section). If you only want one, remove the other with `specify extension remove <id>`.
