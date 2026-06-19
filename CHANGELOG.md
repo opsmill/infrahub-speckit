@@ -20,7 +20,7 @@ The v2.x preset wrapped slash command files. When `opsmill-speckit/auto` (or any
 
 ```bash
 specify preset remove infrahub
-specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
+specify extension add infrahub-speckit --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
 ```
 
 After upgrade, `.specify/extensions.yml` will have three new entries under `hooks.before_specify`, `hooks.before_plan`, and `hooks.before_implement`. No other consumer-side changes required.
