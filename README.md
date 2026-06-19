@@ -59,13 +59,13 @@ Schema is always first — everything else depends on the data model being loade
 Install the spec-kit extension directly from this repository (latest `main`):
 
 ```bash
-specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/heads/main.zip
+specify extension add infrahub-speckit --from https://github.com/opsmill/infrahub-speckit/archive/refs/heads/main.zip
 ```
 
 Pin to a released version for stability:
 
 ```bash
-specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
+specify extension add infrahub-speckit --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
 ```
 
 Or, once it's published to the public spec-kit catalog:
@@ -101,7 +101,7 @@ v2.x installed via `specify preset add infrahub` and overrode `/speckit.specify`
 
 ```bash
 specify preset remove infrahub
-specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
+specify extension add infrahub-speckit --from https://github.com/opsmill/infrahub-speckit/archive/refs/tags/v3.0.0.zip
 ```
 
 After upgrading, your `.specify/extensions.yml` will gain three new `before_*` hook entries under `hooks:`. The slash commands themselves are no longer customized — they run the core skill, which then fires the hook.
@@ -111,8 +111,8 @@ After upgrading, your `.specify/extensions.yml` will gain three new `before_*` h
 There is a separate, narrowly-scoped `infrahub` extension (id: `infrahub`) that validates Jira/JPD ticket references on feature branch creation. It also hooks `before_specify`. Both extensions can be installed in the same project and will coexist — `specify extension add` appends hook entries in install order. We recommend installing the JPD validator first (it owns branch creation; no point routing artifacts for a feature branch you can't create), then this extension:
 
 ```bash
-specify extension add infrahub                          # JPD/Jira branch validator
-specify extension add --from <infrahub-speckit URL>     # artifact routing
+specify extension add infrahub                                        # JPD/Jira branch validator
+specify extension add infrahub-speckit --from <infrahub-speckit URL>  # artifact routing
 ```
 
 The `before_specify` event will then fire in that order at runtime.
@@ -128,7 +128,7 @@ From a fresh directory:
 specify init --here --integration claude
 
 # 2. Install this extension (direct from repo — catalog publishing is pending)
-specify extension add --from https://github.com/opsmill/infrahub-speckit/archive/refs/heads/main.zip
+specify extension add infrahub-speckit --from https://github.com/opsmill/infrahub-speckit/archive/refs/heads/main.zip
 
 # 3. Install the required Infrahub skills
 npx skills add opsmill/infrahub-skills
