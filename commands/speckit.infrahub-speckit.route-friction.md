@@ -31,15 +31,17 @@ If the repository has no `.infrahub.yml`, emit:
 
 Then return.
 
-## Step 2 — Check the reporting skill is available
+## Step 2 — Check the reporting chain is available
 
-Confirm `infrahub-reporting-skill-gaps` appears in your available-skills inventory.
+The accept path is a **two-skill chain**: `infrahub-reporting-skill-gaps` is forbidden from filing and must hand its draft to `infrahub-reporting-issues`. Confirm **both** appear in your available-skills inventory.
 
-**If it is missing**, emit this line and return:
+**If either is missing**, emit this line naming the absent skill and return:
 
 ```
-[infrahub-speckit] infrahub-reporting-skill-gaps not installed. Friction check skipped.
+[infrahub-speckit] <MISSING-SKILL-NAME> not installed. Friction check skipped.
 ```
+
+Check both, not just the first. Offering a report the chain cannot complete is worse than staying quiet: the user accepts, pays for a tracker search and a full draft, and then dead-ends at a handoff target that does not exist. The two skills do ship in the same package, but a manual or partial install can leave one behind, so do not infer the second from the first.
 
 Do NOT halt. Do NOT print install guidance. Do NOT block the completed run. This differs deliberately from Step 2 of the `route-specify`, `route-plan`, and `route-implement` hooks, which halt when the mandatory `infrahub-managing-*` skills are absent. Those skills are load-bearing for the work itself, and running without them is the silent-failure mode this extension exists to close. This one is load-bearing for nothing: implementation is already done, and an absent reporting skill means only that a report cannot be offered.
 
@@ -47,7 +49,7 @@ Do NOT halt. Do NOT print install guidance. Do NOT block the completed run. This
 
 Scan **this session only** for evidence that an Infrahub skill's guidance had a gap. This is a cheap in-session read, not an investigation.
 
-**Do not, in this hook:** run `gh` or search any issue tracker, read rule file contents, diff anything against git history, fetch documentation, or draft any part of a report. All of that belongs to `infrahub-reporting-skill-gaps` and happens only after the user accepts the offer.
+**Do not, in this hook:** run `gh` or search any issue tracker, diff anything against git history, fetch documentation, load rule files into context in full, or draft any part of a report. All of that belongs to `infrahub-reporting-skill-gaps` and happens only after the user accepts the offer. Probe B's directory listing and topic grep below are the single exception, and are bounded to one skill's `rules/` directory.
 
 The gate opens on **probe A or probe C** below. Probe B is not a trigger: it is the attribution read that fills the `Rule coverage:` line of the offer. `evidence-detection-ladder.md` is explicit that "probe A without probe B is incomplete. A tells you something broke; B tells you which file owns it." A topic with no matching rule file is a topic that is undocumented, which is true of plenty of topics on a perfectly healthy cycle. On its own it is not evidence that anything went wrong.
 
@@ -59,7 +61,7 @@ Use whichever verifier the artifact type actually has, as named by that artifact
 
 Two conditions bound this probe, and **both** must hold:
 
-1. **The skill must have been loaded before the first failing attempt.** An earlier hook in this cycle (`route-specify`, `route-plan`, or `route-implement`) loads it. A failure on work authored without the skill says nothing about that skill's guidance.
+1. **The skill must have been loaded before the artifact was authored.** The bound is on the authoring attempt, not on the verifier run. Within a single `/speckit.implement` only `route-implement`'s load is visible: `route-specify` and `route-plan` ran in earlier commands, and skill content does not persist across commands. So this condition holds only when the artifact was authored or edited **in this session, after the skill was loaded**. A red-to-green on an artifact authored in an earlier session says nothing about that skill's guidance, however the verifier behaved today, and a fresh session that only loads or validates pre-existing artifacts is the common shape of that case. **When the authoring is not visible in-session, the probe is not satisfied** — emit the no-op line rather than attributing the friction to a skill that never guided the work.
 2. **The failure must be the artifact being rejected on its own merits.** Authentication, connectivity, a missing or unstarted container, and product-side 5xx errors do **not** open the gate. They exit to level-1 triage, per the same rule. A red-to-green on `infrahubctl schema load` because the user started their instance halfway through the cycle is the single most likely red-to-green in a dev session, and it says nothing at all about any skill's rules.
 
 ### Probe C (opens the gate) — correction delta
@@ -68,7 +70,17 @@ The user rejected or rewrote an artifact the agent authored during this cycle, a
 
 ### Probe B (attribution only, never a trigger) — coverage read
 
-Once probe A or C has opened the gate, `ls` the implicated skill's `rules/` directory to name the file that should have prevented the friction, or to establish that no file covers the topic. An `ls` is in scope; reading file contents is not.
+Once probe A or C has opened the gate, `ls` the implicated skill's `rules/` directory **and grep it for the topic terms**, which is exactly what the ladder's probe B is: "Run `ls skills/<skill>/rules/` and grep the topic terms."
+
+**A filename alone cannot settle this**, so do not try to answer from the listing. `relationship-identifiers.md` documents the bidirectional relationship case but never the generic-peer one; a name-only read would report it as covering a topic it does not cover, and that wrong claim is what the user sees in the offer and what seeds the eventual report. Scope the grep to that one directory, and still do not load whole rule files into context or read any other skill's rules.
+
+The grep result sets the `Rule coverage:` value, per the ladder's own reading of probe B:
+
+| Grep result | `Rule coverage:` value | What it means downstream |
+| ----------- | ---------------------- | ------------------------ |
+| A hit, and the output was still wrong | the filename | points at a bug in an existing rule |
+| No hit | `no rule file covers this topic` | points at a feature or a docs gap |
+| Directory could not be resolved | `unresolved` | attribution deferred to the reporting skill |
 
 **Locate it by its invariant, not by a hard-coded path.** A skill's `rules/` directory is always a sibling of that skill's own `SKILL.md`, in every install method and under every assistant. So resolve `<root>/<skill-name>/SKILL.md` first, then read the `rules/` directory next to it.
 

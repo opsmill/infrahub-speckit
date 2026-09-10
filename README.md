@@ -4,10 +4,12 @@ Hooks the core `/speckit.specify`, `/speckit.plan`, and `/speckit.implement` com
 
 ## What it does
 
-The `infrahub-speckit` extension registers three `before_*` hooks and one `after_*` hook against the core speckit skills. When any of those skills is invoked — whether by the slash command, by another skill (e.g. `opsmill-speckit/auto`), or by an autonomous agent — the matching hook fires and:
+The `infrahub-speckit` extension registers three `before_*` hooks and one `after_*` hook against the core speckit skills. All four fire whether the skill was invoked by the slash command, by another skill (e.g. `opsmill-speckit/auto`), or by an autonomous agent.
+
+The **three `before_*` hooks** fire *before* the skill body runs, and each one:
 
 - detects `.infrahub.yml` (no-op if absent),
-- verifies the `infrahub-managing-*` Claude Code skills are installed,
+- verifies the `infrahub-managing-*` Claude Code skills are installed, halting with install guidance if they are not,
 - gates on Infrahub connectivity via `infrahubctl info` (for `before_specify` only),
 - classifies the requested artifact type (schema / transform / check / generator / menu),
 - invokes the matching `infrahub-managing-*` skill,
@@ -15,7 +17,7 @@ The `infrahub-speckit` extension registers three `before_*` hooks and one `after
 
 The hook returns; the core skill runs.
 
-The one `after_*` hook runs at the other end of the cycle: once `/speckit.implement` finishes, it checks whether an Infrahub skill's guidance had a gap during the work and offers to report it. Detection is automatic. Drafting and filing are not (see [`after_implement` hook](#after_implement-hook) below).
+The **one `after_*` hook** is different in kind, and none of the bullets above apply to it. It fires at the other end of the cycle, *after* `/speckit.implement` has finished, and it never halts, never gates on connectivity, and never invokes an `infrahub-managing-*` skill. It checks whether an Infrahub skill's guidance had a gap during the work and offers to report it. Detection is automatic. Drafting and filing are not (see [`after_implement` hook](#after_implement-hook) below).
 
 ### Why "extension" not "preset" (v3.0 vs v2.x)
 
@@ -46,16 +48,17 @@ Infrahub skills fail quietly. A missing or unclear rule does not crash the run; 
 It runs automatically after every `/speckit.implement`, and does a cheap in-session scan only:
 
 1. Checks for `.infrahub.yml` (no-op if absent).
-2. Checks whether `infrahub-reporting-skill-gaps` is installed. If not, it skips quietly. It does **not** halt, unlike the three `before_*` hooks: implementation is already done, and nothing this hook finds may fail or roll back a finished run.
+2. Checks whether **both** `infrahub-reporting-skill-gaps` and `infrahub-reporting-issues` are installed. The accept path is a two-skill chain (the first is forbidden from filing and hands off to the second), so offering a report the chain cannot complete would waste a tracker search and a full draft on a dead end. If either is absent it skips quietly. It does **not** halt, unlike the three `before_*` hooks: implementation is already done, and nothing this hook finds may fail or roll back a finished run.
 3. Applies an evidence gate, which opens on either of two probes: a **verifier verdict** (a verifier rejected an artifact and later accepted it, red to green on the same target) or a **correction delta** (you rewrote something the agent authored, in a way a rule could have prevented).
-4. If the gate opened, reads the implicated skill's `rules/` directory to name the file that should have covered it, then prints a one-line offer and stops.
+4. If the gate opened, lists and greps the implicated skill's `rules/` directory to name the file that should have covered it, then prints a one-line offer and stops. The grep matters: a filename alone cannot establish whether a rule covers a topic, so a name-only read would put a wrong claim in front of you.
 
 That coverage read resolves the skill's location by its invariant rather than a fixed path: `rules/` always sits beside the skill's own `SKILL.md`. It searches `.agents/skills/` (the assistant-neutral layout `npx skills add` uses, and the most common one), a plain `skills/` directory, `.claude/skills/`, their global equivalents, and the Claude Code plugin cache, then falls back to globbing for `<skill>/SKILL.md`. No assistant-specific path is hard-coded, since spec-kit is not Claude-specific and any assistant can fire this hook. If the lookup finds nothing the offer is still printed, with `Rule coverage: unresolved`.
 
 The **coverage read in step 4 is attribution, not a trigger.** A topic with no matching rule file is simply an undocumented topic, true of plenty of topics on a healthy cycle, so on its own it never earns an offer. `evidence-detection-ladder.md` puts it as "probe A without probe B is incomplete. A tells you something broke; B tells you which file owns it."
 
-Two further exclusions keep the gate honest:
+Three further exclusions keep the gate honest:
 
+- **The skill must have guided the authoring, not just been loaded at some point.** The bound is on when the artifact was written, so a red-to-green on something authored in an earlier session does not qualify, however the verifier behaved today. Only `route-implement`'s load is visible inside a single implement run, since skill content does not persist across commands. If the hook cannot see the authoring in-session, it stays quiet.
 - **Not every failure is a skill gap.** Authentication, connectivity, an unstarted container, and product-side 5xx errors do not open it. A red-to-green on `infrahubctl schema load` because you started your instance mid-cycle is the most likely red-to-green in a dev session and says nothing about any skill's rules.
 - **Session-shape counters never open it.** Retry counts, edit churn, repeated asks, and docs escapes rise for reasons unrelated to a skill's guidance, such as an unclear request or a user changing their mind. A hook that fired on a retry count would offer a report on most cycles and train you to ignore it.
 
