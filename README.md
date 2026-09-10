@@ -50,6 +50,8 @@ It runs automatically after every `/speckit.implement`, and does a cheap in-sess
 3. Applies an evidence gate, which opens on either of two probes: a **verifier verdict** (a verifier rejected an artifact and later accepted it, red to green on the same target) or a **correction delta** (you rewrote something the agent authored, in a way a rule could have prevented).
 4. If the gate opened, reads the implicated skill's `rules/` directory to name the file that should have covered it, then prints a one-line offer and stops.
 
+That coverage read resolves the skill's location by its invariant rather than a fixed path: `rules/` always sits beside the skill's own `SKILL.md`. It searches `.agents/skills/` (the assistant-neutral layout `npx skills add` uses, and the most common one), a plain `skills/` directory, `.claude/skills/`, their global equivalents, and the Claude Code plugin cache, then falls back to globbing for `<skill>/SKILL.md`. No assistant-specific path is hard-coded, since spec-kit is not Claude-specific and any assistant can fire this hook. If the lookup finds nothing the offer is still printed, with `Rule coverage: unresolved`.
+
 The **coverage read in step 4 is attribution, not a trigger.** A topic with no matching rule file is simply an undocumented topic, true of plenty of topics on a healthy cycle, so on its own it never earns an offer. `evidence-detection-ladder.md` puts it as "probe A without probe B is incomplete. A tells you something broke; B tells you which file owns it."
 
 Two further exclusions keep the gate honest:

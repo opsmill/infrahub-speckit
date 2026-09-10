@@ -70,12 +70,19 @@ The user rejected or rewrote an artifact the agent authored during this cycle, a
 
 Once probe A or C has opened the gate, `ls` the implicated skill's `rules/` directory to name the file that should have prevented the friction, or to establish that no file covers the topic. An `ls` is in scope; reading file contents is not.
 
-Resolve the directory in this order and use the first that exists. The layout differs per install, so do not guess:
+**Locate it by its invariant, not by a hard-coded path.** A skill's `rules/` directory is always a sibling of that skill's own `SKILL.md`, in every install method and under every assistant. So resolve `<root>/<skill-name>/SKILL.md` first, then read the `rules/` directory next to it.
 
-1. `skills/<skill>/rules/` — a checkout of the skills repo itself
-2. `.claude/skills/<skill>/rules/` or `.agents/skills/<skill>/rules/` — project-local install
-3. `~/.claude/skills/<skill>/rules/` — user-level install
-4. `~/.claude/plugins/cache/opsmill/infrahub/<version>/skills/<skill>/rules/` — Claude Code plugin install
+Search these roots, project-local before global, and stop at the first hit:
+
+| Root | Install method |
+| ---- | -------------- |
+| `.agents/skills/<skill>/` | `npx skills add`, assistant-neutral. The most common layout |
+| `skills/<skill>/` | manual copy into the project, or a checkout of the skills repo itself |
+| `.claude/skills/<skill>/` | Claude Code, project-local |
+| `~/.agents/skills/<skill>/`, `~/.claude/skills/<skill>/` | the same layouts installed globally |
+| `~/.claude/plugins/cache/opsmill/infrahub/<version>/skills/<skill>/` | Claude Code plugin marketplace |
+
+**This table is a hint, not a closed set.** `npx skills add` installs for whichever assistants are present, and the skills support Claude Code, GitHub Copilot, Cursor, Windsurf, Amp, Cline, Codex and others. Each keeps context files in its own place, so a root that is not listed here is expected rather than an error. When none of the above resolve, glob for `<skill-name>/SKILL.md` beneath the project root and the user's home directory and use the `rules/` sibling of whatever it finds. Do not assume `.claude/`: this extension is driven from spec-kit, which is not Claude-specific, and an assistant-specific path is the wrong thing to hard-code in a hook that any of them can fire.
 
 **If none of them resolve, still emit the offer** with `Rule coverage: unresolved`. Probe B is attribution, not evidence, so a failed path lookup must not suppress an offer that probe A or C already earned. `infrahub-reporting-skill-gaps` runs this read again properly as its own step 5.
 
