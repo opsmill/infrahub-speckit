@@ -9,19 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Skill-friction reporting via a new `after_implement` hook.** A fourth hook command (`speckit.infrahub-speckit.route-friction`) fires when `/speckit.implement` finishes and checks the completed cycle for evidence that an Infrahub skill's own guidance had a gap. On a hit it prints a one-line offer naming the implicated skill and the evidence. Replying routes into the `infrahub-reporting-skill-gaps` skill, which drafts a redacted report and hands it to `infrahub-reporting-issues` for filing.
+- **Skill-friction reporting via a new `after_implement` hook.** A fourth hook command (`speckit.infrahub-speckit.route-friction`) fires when `/speckit.implement` finishes and checks the completed cycle for evidence that an Infrahub skill's own guidance had a gap. On a hit it prints a one-line offer naming the implicated skill and the evidence. Replying routes into `infrahub-reporting-skill-gaps`, which drafts a redacted report and hands it to `infrahub-reporting-issues` for filing.
 
-  Infrahub skills fail quietly: a missing or unclear rule does not crash a run, it produces extra round trips and repeated nudges until the model works the answer out anyway. That friction is invisible once the cycle ends, so the hook looks for it while the session still holds the evidence.
+  Detection is automatic; drafting and filing are not. The hook never invokes the reporting skill itself, so a cycle with nothing to report costs one line. Nothing reaches GitHub without passing that skill's ban on filing directly plus the content-review and submission-method gates in `infrahub-reporting-issues`.
 
-- **Detection is automatic; drafting and filing are not.** The hook does a cheap in-session scan and never invokes the reporting skill itself, so a cycle with nothing to report costs one line. The offer it prints is the trigger `infrahub-reporting-skill-gaps` already declares, so no extra wiring is needed to route a user's reply. Filing then passes through that skill's ban on filing directly, plus the mandatory content-review and submission-method gates in `infrahub-reporting-issues`. Nothing reaches GitHub without explicit approval, and the manual submission path sends nothing from the user's machine.
+  The evidence gate opens on a verifier red-to-green on the same target, or an in-session correction to an agent-authored artifact. A coverage read is the attribution step that names the implicated rule file, never a trigger on its own. Failures caused by auth, connectivity, an unstarted container, or a product-side 5xx are excluded, as are session-shape counters (retries, edit churn, repeated asks, docs escapes). Verifier command names are not restated here or in the hook: `evidence-detection-ladder.md` owns that list.
 
-- **An evidence gate that excludes session-shape counters.** The gate opens only on a closing probe from the skill's detection ladder: a red-to-green transition on the same target (`infrahubctl schema load` / `object load` / `check run` / `transform run`, or `pytest`), a coverage read showing no rule file covers the topic, or an in-session correction to an agent-authored artifact. Retry counts, edit churn, repeated asks, and docs escapes do not qualify. They rise for reasons unrelated to a skill's guidance, and a hook that fired on them would offer a report on most cycles and train users to ignore it.
+  Never halts. It runs after implementation has already succeeded, so a missing skill, an error, or an ambiguous read all degrade to a no-op line rather than disrupting finished work.
 
-- **Two per-project escape hatches**, both on the hook's entry in `.specify/extensions.yml`: `optional: true` converts it from automatic to an opt-in offer (a `prompt` ships in the entry ready for this), and `enabled: false` disables it.
-
-### Changed
-
-- The `after_implement` friction hook does **not** halt when its reporting skills are absent, unlike the three `before_*` hooks, which halt when the mandatory `infrahub-managing-*` skills are missing. It runs after implementation has already succeeded, so nothing it discovers may fail, retry, or roll back a finished run. Every path through it returns; a missing skill, an error, or an ambiguous read all degrade to a no-op line.
+  Two per-project escape hatches on the hook's entry in `.specify/extensions.yml`: `optional: true` converts it to an opt-in offer (a `prompt` ships ready for this), `enabled: false` disables it.
 
 ## [3.0.0] - 2026-05-28
 

@@ -47,10 +47,19 @@ It runs automatically after every `/speckit.implement`, and does a cheap in-sess
 
 1. Checks for `.infrahub.yml` (no-op if absent).
 2. Checks whether `infrahub-reporting-skill-gaps` is installed. If not, it skips quietly. It does **not** halt, unlike the three `before_*` hooks: implementation is already done, and nothing this hook finds may fail or roll back a finished run.
-3. Applies an evidence gate. It opens on one of three closing probes: a red-to-green transition on the same target (`infrahubctl schema load` / `object load` / `check run` / `transform run`, or a `pytest` run), a coverage read showing no rule file covers the topic, or an in-session correction the user made to an artifact the agent authored.
-4. If the gate opened, prints a one-line offer naming the skill and the evidence, then stops.
+3. Applies an evidence gate, which opens on either of two probes: a **verifier verdict** (a verifier rejected an artifact and later accepted it, red to green on the same target) or a **correction delta** (you rewrote something the agent authored, in a way a rule could have prevented).
+4. If the gate opened, reads the implicated skill's `rules/` directory to name the file that should have covered it, then prints a one-line offer and stops.
 
-Retry counts, edit churn, repeated asks, and docs escapes do **not** open the gate. They are session-shape counters: they rise for reasons unrelated to a skill's guidance, such as an unclear request or a user changing their mind. A hook that fired on a retry count would offer a report on most cycles and train you to ignore it. Most cycles end at step 3 with a single no-op line.
+The **coverage read in step 4 is attribution, not a trigger.** A topic with no matching rule file is simply an undocumented topic, true of plenty of topics on a healthy cycle, so on its own it never earns an offer. `evidence-detection-ladder.md` puts it as "probe A without probe B is incomplete. A tells you something broke; B tells you which file owns it."
+
+Two further exclusions keep the gate honest:
+
+- **Not every failure is a skill gap.** Authentication, connectivity, an unstarted container, and product-side 5xx errors do not open it. A red-to-green on `infrahubctl schema load` because you started your instance mid-cycle is the most likely red-to-green in a dev session and says nothing about any skill's rules.
+- **Session-shape counters never open it.** Retry counts, edit churn, repeated asks, and docs escapes rise for reasons unrelated to a skill's guidance, such as an unclear request or a user changing their mind. A hook that fired on a retry count would offer a report on most cycles and train you to ignore it.
+
+Most cycles end at step 3 with a single no-op line.
+
+The hook does **not** carry its own list of verifier commands. `evidence-detection-ladder.md` in the `infrahub-reporting-skill-gaps` skill owns that list, and the hook defers to it rather than keeping a copy that drifts.
 
 **Detection is automatic; drafting and filing are not.** The hook never invokes the reporting skill itself. The offer it prints is the trigger `infrahub-reporting-skill-gaps` already declares, so replying to it routes into that skill with no further wiring. Only then does anything expensive happen: the tracker search against `opsmill/infrahub-skills`, triage of skill defect vs. product defect, and a redacted draft. That skill is forbidden from filing. It hands the draft to `infrahub-reporting-issues`, which owns the last two gates:
 
@@ -290,7 +299,7 @@ specs/
 
 **The friction hook offered a report and I don't want to file anything** — ignore it. The offer is the hook's entire output; it does not invoke the reporting skill or search any tracker on its own. Even if you do accept, `infrahub-reporting-skill-gaps` cannot file: it hands a draft to `infrahub-reporting-issues`, which stops at a mandatory content review and then asks how you want to submit. Choosing the manual method sends nothing from your machine.
 
-**The friction hook never offers anything** — expected on most cycles. The evidence gate only opens on a red-to-green verifier transition, a coverage read with no matching rule file, or an in-session correction to an agent-authored artifact. Retry counts and edit churn deliberately do not qualify. If you believe a real gap went unreported, invoke `infrahub-reporting-skill-gaps` directly.
+**The friction hook never offers anything** — expected on most cycles. The gate opens only on a verifier red-to-green on the same target, or an in-session correction to an agent-authored artifact. A missing rule file on its own does not qualify (it is the attribution read, not the trigger), and neither do retry counts, edit churn, or failures caused by auth, connectivity, or an unstarted container. If you believe a real gap went unreported, invoke `infrahub-reporting-skill-gaps` directly.
 
 **`specify extension list` doesn't show `infrahub-speckit` after install** — confirm the install command succeeded and that `.specify/extensions/infrahub-speckit/extension.yml` exists in the target project. If it does, also confirm `.specify/extensions.yml` has four new entries under `hooks.before_specify`, `hooks.before_plan`, `hooks.before_implement`, and `hooks.after_implement` referencing this extension. Note: in spec-kit 0.8.x the top-level `installed:` list in `extensions.yml` may stay empty even on a healthy install — the install registry moved to `.specify/extensions/.registry`, which is what `specify extension list` reads. The presence of the `hooks.*` entries is the canonical signal. If those entries are missing, re-run `specify extension add` — install was incomplete.
 

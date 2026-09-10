@@ -49,15 +49,39 @@ Scan **this session only** for evidence that an Infrahub skill's guidance had a 
 
 **Do not, in this hook:** run `gh` or search any issue tracker, read rule file contents, diff anything against git history, fetch documentation, or draft any part of a report. All of that belongs to `infrahub-reporting-skill-gaps` and happens only after the user accepts the offer.
 
-The gate opens on any one of these three **closing** probes, drawn from the skill's detection ladder:
+The gate opens on **probe A or probe C** below. Probe B is not a trigger: it is the attribution read that fills the `Rule coverage:` line of the offer. `evidence-detection-ladder.md` is explicit that "probe A without probe B is incomplete. A tells you something broke; B tells you which file owns it." A topic with no matching rule file is a topic that is undocumented, which is true of plenty of topics on a perfectly healthy cycle. On its own it is not evidence that anything went wrong.
 
-| Probe | What to look for | Notes |
-|-------|------------------|-------|
-| **Verifier verdict** | A red-to-green transition on the same target within this session: `infrahubctl schema load`, `infrahubctl object load`, `infrahubctl check run`, `infrahubctl transform run`, or a `pytest` run that failed and then passed against the same artifact. | Strongest evidence there is, because no self-assessment produced it. It only counts when the relevant `infrahub-managing-*` skill was loaded (by an earlier hook in this cycle) BEFORE the first failing attempt. |
-| **Coverage read** | `ls` the implicated skill's `rules/` directory and check whether any filename covers the topic the model struggled with. An absence is a positive result. | Names the file, or names the gap. An `ls` is in scope here; reading the file contents is not. |
-| **Correction delta** | The user rejected or rewrote an artifact the agent authored during this cycle, and the accepted version differs in a way a rule could have prevented. | The delta itself is the proposed rule change, so it must be visible in-session. Do not reconstruct it from git. |
+### Probe A (opens the gate) — verifier verdict
 
-**These do NOT open the gate**, on their own or in combination:
+A red-to-green transition on the same target within this session: a verifier for the artifact type rejected the artifact and later accepted it. Strongest evidence there is, because no self-assessment produced it.
+
+Use whichever verifier the artifact type actually has, as named by that artifact's own `infrahub-managing-*` skill. **This file deliberately does not enumerate the commands.** `evidence-detection-ladder.md` owns that list, and a copy here would drift from it; the copy that used to live in this table had already drifted into command names that do not exist.
+
+Two conditions bound this probe, and **both** must hold:
+
+1. **The skill must have been loaded before the first failing attempt.** An earlier hook in this cycle (`route-specify`, `route-plan`, or `route-implement`) loads it. A failure on work authored without the skill says nothing about that skill's guidance.
+2. **The failure must be the artifact being rejected on its own merits.** Authentication, connectivity, a missing or unstarted container, and product-side 5xx errors do **not** open the gate. They exit to level-1 triage, per the same rule. A red-to-green on `infrahubctl schema load` because the user started their instance halfway through the cycle is the single most likely red-to-green in a dev session, and it says nothing at all about any skill's rules.
+
+### Probe C (opens the gate) — correction delta
+
+The user rejected or rewrote an artifact the agent authored during this cycle, and the accepted version differs in a way a rule could have prevented. The delta itself is the proposed rule change, so it must be visible in-session. Do not reconstruct it from git.
+
+### Probe B (attribution only, never a trigger) — coverage read
+
+Once probe A or C has opened the gate, `ls` the implicated skill's `rules/` directory to name the file that should have prevented the friction, or to establish that no file covers the topic. An `ls` is in scope; reading file contents is not.
+
+Resolve the directory in this order and use the first that exists. The layout differs per install, so do not guess:
+
+1. `skills/<skill>/rules/` — a checkout of the skills repo itself
+2. `.claude/skills/<skill>/rules/` or `.agents/skills/<skill>/rules/` — project-local install
+3. `~/.claude/skills/<skill>/rules/` — user-level install
+4. `~/.claude/plugins/cache/opsmill/infrahub/<version>/skills/<skill>/rules/` — Claude Code plugin install
+
+**If none of them resolve, still emit the offer** with `Rule coverage: unresolved`. Probe B is attribution, not evidence, so a failed path lookup must not suppress an offer that probe A or C already earned. `infrahub-reporting-skill-gaps` runs this read again properly as its own step 5.
+
+### These do NOT open the gate
+
+Not on their own, and not in combination:
 
 - retry counts and round-trip counts
 - edit churn on the same file
@@ -83,13 +107,18 @@ If the gate opened, emit exactly this block, then return:
 
 Skill:        <IMPLICATED-SKILL-NAME>
 Evidence:     <ONE-LINE-SUMMARY-OF-THE-CLOSING-PROBE>
-Rule coverage: <RULE-FILENAME> | no rule file covers this topic
+Rule coverage: <RULE-FILENAME> | no rule file covers this topic | unresolved
 
 An Infrahub skill's guidance may have a gap here. Reply "report it" to draft a
 skill-friction report for review. Nothing is filed without your approval.
 ```
 
-Substitute the placeholders with the values from Step 3. Keep `Evidence` to one line and state what actually happened, for example `schema load failed on relationship cardinality, passed after correction` or `no rule covers CoreFileObject attribute kinds`.
+Substitute the placeholders with the values from Step 3. `Evidence` states what actually opened the gate, in one line, and so always describes probe A or probe C, never probe B. For example:
+
+- `schema load rejected the file twice, passed after an identifier was set` (probe A)
+- `user rewrote the generated check to query per-group rather than globally` (probe C)
+
+`no rule covers <topic>` is a `Rule coverage` value, not an `Evidence` value. On its own it never earned the offer.
 
 **Do NOT invoke `infrahub-reporting-skill-gaps` here.** The offer above is the trigger that skill already declares ("accepting a friction offer"), so a user reply routes into it through its own description with no further wiring from this extension. Invoking it from this hook would load its full rule set and begin the tracker search on a cycle where the user never asked for either.
 
