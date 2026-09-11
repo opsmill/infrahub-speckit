@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-09-10
+
+### Added
+
+- **Skill-friction reporting via a new `after_implement` hook.** A fourth hook command (`speckit.infrahub-speckit.route-friction`) fires when `/speckit.implement` finishes and checks the completed cycle for evidence that an Infrahub skill's own guidance had a gap. On a hit it prints a one-line offer naming the implicated skill and the evidence. Replying routes into `infrahub-reporting-skill-gaps`, which drafts a redacted report and hands it to `infrahub-reporting-issues` for filing.
+
+  Detection is automatic; drafting and filing are not. The hook never invokes the reporting skill itself, so a cycle with nothing to report costs one line. Nothing reaches GitHub without passing that skill's ban on filing directly plus the content-review and submission-method gates in `infrahub-reporting-issues`.
+
+  The evidence gate opens on a verifier red-to-green on the same target, or an in-session correction to an agent-authored artifact. A coverage read is the attribution step that names the implicated rule file, never a trigger on its own. Failures caused by auth, connectivity, an unstarted container, or a product-side 5xx are excluded, as are session-shape counters (retries, edit churn, repeated asks, docs escapes). Verifier command names are not restated here or in the hook: `evidence-detection-ladder.md` owns that list.
+
+  Never halts. It runs after implementation has already succeeded, so a missing skill, an error, or an ambiguous read all degrade to a no-op line rather than disrupting finished work.
+
+  Two per-project escape hatches on the hook's entry in `.specify/extensions.yml`: `optional: true` converts it to an opt-in offer (a `prompt` ships ready for this), `enabled: false` disables it.
+
 ## [3.0.0] - 2026-05-28
 
 ### Changed
